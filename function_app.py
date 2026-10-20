@@ -12,19 +12,15 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 def submit_profile(req: func.HttpRequest, tableOut: func.Out[str]) -> func.HttpResponse:
     logging.info("Processing incoming user registration payload...")
 
-    # Optional: Extract claims if App Service Identity (Easy Auth) is toggled on
-    principal_header = req.headers.get("X-MS-CLIENT-PRINCIPAL")
-    user_id = "anonymous_user"
-    if principal_header:
-        # Decode and grab user attributes if needed for auditing
-        pass
-
     try:
         req_body = req.get_json()
+        if not isinstance(req_body, dict):
+            return func.HttpResponse("Request body must be a JSON object.", status_code=400)
+
         username = req_body.get('username')
         email = req_body.get('email')
 
-        if not username or not email:
+        if not isinstance(username, str) or not username.strip() or not isinstance(email, str) or not email.strip():
             return func.HttpResponse("Missing username or email fields.", status_code=400)
 
         # Structure the payload targeting Table Storage rules (Requires PartitionKey & RowKey)
@@ -39,15 +35,9 @@ def submit_profile(req: func.HttpRequest, tableOut: func.Out[str]) -> func.HttpR
         # Convert entity to string representation and flush it via output binding plumbing
         tableOut.set(json.dumps(profile_entity))
 
-        # Explicitly return CORS headers so the static HTML file can access the API
         return func.HttpResponse(
             body=f"Profile registered successfully under record ID {row_key}!",
-            status_code=201,
-            headers={
-                "Access-Control-Allow-Origin": "*", # Adjust in prod to your actual domain
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type"
-            }
+            status_code=201
         )
 
     except ValueError:
