@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Serverless Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { background-color: #0078d4; color: white; border: none; padding: 10px 15px; cursor: pointer; width: 100%; }
+        #message { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Submit User Profile</h2>
+    <form id="profileForm">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" required>
+        </div>
+        <button type="submit">Save to Cloud Database</button>
+    </form>
+
+    <div id="message"></div>
+
+    <script>
+        // BACKEND URL: Replace with your local port or deployed Azure function URL
+        const BACKEND_URL = "http://localhost:7071/api/submit";
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerText = "Processing...";
+
+            const payload = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value
+            };
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.text();
+                
+                if (response.ok) {
+                    messageDiv.style.color = "green";
+                    messageDiv.innerText = `Success: ${result}`;
+                    document.getElementById('profileForm').reset();
+                } else {
+                    messageDiv.style.color = "red";
+                    messageDiv.innerText = `Error: ${result}`;
+                }
+            } catch (err) {
+                messageDiv.style.color = "red";
+                messageDiv.innerText = "Failed to connect to backend API.";
+            }
+        });
+    </script>
+</body>
+</html>
